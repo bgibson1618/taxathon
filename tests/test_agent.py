@@ -315,10 +315,11 @@ def test_loop_recovers_from_malformed_tool_call():
 
 def test_loop_max_iteration_guard_terminates():
     """A model that requests tools forever is stopped by the iteration guard."""
-    # Always ask another question — never a final text turn.
+    # Always request a (non-terminating) tool — never a final text turn. (ask_user
+    # would end the turn by design, so use extract_w2, which loops without ending.)
     infinite = ScriptedLLM(
         [
-            _response_with_tool_calls([_tool_call(f"c{i}", "ask_user", {"question": "?"})])
+            _response_with_tool_calls([_tool_call(f"c{i}", "extract_w2", {})])
             for i in range(loop.MAX_TOOL_ITERATIONS + 5)
         ]
     )

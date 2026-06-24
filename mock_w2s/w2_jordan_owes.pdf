@@ -1,0 +1,167 @@
+%PDF-1.3
+%‚„œ”
+1 0 obj
+<<
+/Producer (pypdf)
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Count 1
+/Kids [ 4 0 R ]
+>>
+endobj
+3 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+/AcroForm 13 0 R
+>>
+endobj
+4 0 obj
+<<
+/Type /Page
+/Resources <<
+/Font <<
+/F1 6 0 R
+>>
+>>
+/MediaBox [ 0.0 0.0 612 792 ]
+/Parent 2 0 R
+/Contents 5 0 R
+/Annots [ 7 0 R 8 0 R 9 0 R 10 0 R 11 0 R 12 0 R ]
+>>
+endobj
+5 0 obj
+<<
+/Length 535
+>>
+stream
+BT /F1 14 Tf 72.0 752.0 Td (Form W-2  Wage and Tax Statement  2025) Tj ET
+BT /F1 9 Tf 72.0 736.0 Td (*** FAKE / SAMPLE - NOT A REAL W-2 - FOR DEMO USE ONLY ***) Tj ET
+BT /F1 10 Tf 72.0 700.0 Td (Employee name:) Tj ET
+BT /F1 10 Tf 72.0 680.0 Td (Employee SSN \(Box a\):) Tj ET
+BT /F1 10 Tf 72.0 660.0 Td (Employee address:) Tj ET
+BT /F1 10 Tf 72.0 640.0 Td (Employer name \(Box c\):) Tj ET
+BT /F1 10 Tf 72.0 600.0 Td (Box 1  Wages, tips, other compensation:) Tj ET
+BT /F1 10 Tf 72.0 580.0 Td (Box 2  Federal income tax withheld:) Tj ET
+
+endstream
+endobj
+6 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+7 0 obj
+<<
+/FT /Tx
+/T (employee\137name)
+/V (Jordan Rivera)
+/Subtype /Widget
+/Rect [ 200 696 540 712 ]
+/F 4
+/DA (\057F1 10 Tf 0 g)
+/P 4 0 R
+>>
+endobj
+8 0 obj
+<<
+/FT /Tx
+/T (employee\137ssn)
+/V (222\05533\0554444)
+/Subtype /Widget
+/Rect [ 220 676 540 692 ]
+/F 4
+/DA (\057F1 10 Tf 0 g)
+/P 4 0 R
+>>
+endobj
+9 0 obj
+<<
+/FT /Tx
+/T (employee\137address)
+/V (42 Maple St\054 Dayton\054 OH 45402)
+/Subtype /Widget
+/Rect [ 200 656 540 672 ]
+/F 4
+/DA (\057F1 10 Tf 0 g)
+/P 4 0 R
+>>
+endobj
+10 0 obj
+<<
+/FT /Tx
+/T (employer\137name)
+/V (Northwind Trading Co)
+/Subtype /Widget
+/Rect [ 220 636 540 652 ]
+/F 4
+/DA (\057F1 10 Tf 0 g)
+/P 4 0 R
+>>
+endobj
+11 0 obj
+<<
+/FT /Tx
+/T (box1\137wages)
+/V (40000\05600)
+/Subtype /Widget
+/Rect [ 320 596 480 612 ]
+/F 4
+/DA (\057F1 10 Tf 0 g)
+/P 4 0 R
+>>
+endobj
+12 0 obj
+<<
+/FT /Tx
+/T (box2\137fed\137withholding)
+/V (1500\05600)
+/Subtype /Widget
+/Rect [ 320 576 480 592 ]
+/F 4
+/DA (\057F1 10 Tf 0 g)
+/P 4 0 R
+>>
+endobj
+13 0 obj
+<<
+/Fields [ 7 0 R 8 0 R 9 0 R 10 0 R 11 0 R 12 0 R ]
+/NeedAppearances true
+/DA (\057F1 10 Tf 0 g)
+/DR <<
+/Font <<
+/F1 6 0 R
+>>
+>>
+>>
+endobj
+xref
+0 14
+0000000000 65535 f 
+0000000015 00000 n 
+0000000054 00000 n 
+0000000113 00000 n 
+0000000179 00000 n 
+0000000362 00000 n 
+0000000948 00000 n 
+0000001018 00000 n 
+0000001168 00000 n 
+0000001321 00000 n 
+0000001496 00000 n 
+0000001654 00000 n 
+0000001800 00000 n 
+0000001958 00000 n 
+trailer
+<<
+/Size 14
+/Root 3 0 R
+/Info 1 0 R
+>>
+startxref
+2108
+%%EOF

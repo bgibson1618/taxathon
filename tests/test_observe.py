@@ -288,7 +288,9 @@ def test_observed_smoke_loop_then_trace():
             _resp_text("All set — you're getting a refund!"),
         ]
     )
-    loop.run_turn(st, "Here's my W-2, I'm single.", llm_fn=script)
+    # ask_user ends a turn (it waits for the user), so the answer arrives in turn 2.
+    loop.run_turn(st, "Here's my W-2.", llm_fn=script)  # extract_w2 -> ask_user (turn ends)
+    loop.run_turn(st, "I'm single.", llm_fn=script)  # set_filing_status -> compute_1040 -> reply
 
     body = client.get(f"/trace/{st.session_id}").json()
     records = body["records"]

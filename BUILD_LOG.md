@@ -89,3 +89,13 @@ legible," not pixel-perfect (research caveat).
 crash on the StructuredOutput verdict cap *after* doing the work — reconcile from disk, not the verdict.
 (2) Strict per-builder file ownership + a single shared-file editor per wave kept the parallel fan-out
 collision-free. (3) Greenfield needs a serial substrate scaffold before fanning out builders.
+
+## Post-closeout fix — ask_user questions now render in chat — 2026-06-24
+
+Bug found in live use: the agent's `ask_user` questions appeared in `/trace` but not the chat window.
+Root cause: `ask_user` was dispatched like any tool (loop continued; the model returned empty NL content),
+so the turn's reply was empty and only the trace captured the question. Fix (`app/agent/loop.py`):
+`ask_user` now ENDS the turn and its question becomes the reply (correct "pause and wait for the user"
+semantics). Updated two tests that had encoded the old behavior. Verified on the real HTTP /chat/stream
+route (question streams to the user) + 159 tests green. Also added `mock_w2s/` + `scripts/gen_mock_w2s.py`
+(varied test W-2s in the app's AcroForm format).

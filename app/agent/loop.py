@@ -284,6 +284,7 @@ def run_turn(
         # (the API requires the tool results to reference its tool_call ids).
         state.messages.append(_assistant_tool_call_message(message, tool_calls))
 
+        pending_question = ""
         for call in tool_calls:
             fn = call.get("function") or {}
             name = fn.get("name", "")
@@ -323,6 +324,29 @@ def run_turn(
                     "name": name,
                     "content": json.dumps(result),
                 }
+            )
+
+            # ask_user is the "pause and wait for the user" signal — capture its
+            # question text (it lives in the tool result, not in NL prose).
+            if (
+                name == "ask_user"
+                and isinstance(result, dict)
+                and result.get("ok")
+                and result.get("question")
+            ):
+                pending_question = str(result["question"])
+
+        # The agent asked the user something this turn: END the turn and surface the
+        # question as the reply, rather than calling the model again. ask_user means
+        # "wait for the user's answer"; without this the turn's NL content is empty
+        # and the chat window renders nothing (the question shows only in /trace).
+        if pending_question:
+            state.messages.append({"role": "assistant", "content": pending_question})
+            record(state, "talk", result_summary=pending_question)
+            return TurnResult(
+                content=pending_question,
+                tool_calls_made=tool_calls_made,
+                iterations=iteration,
             )
 
     # Iteration guard tripped — the model kept requesting tools. Stop cleanly with
