@@ -55,3 +55,14 @@ Full suite **145 passed**. Parent wired `install_guardrails()` into app startup 
 **F7 — Filing-status variation** → `proved` (test + observed): hand-computed goldens per status; PDF checkbox per status; live status-change recompute. 18 tests.
 
 **Checkpoints:** fresh-eyes reviewer SKIPPED per user time-pressure waiver (deterministic validators green; honest note). Walkthrough deferred to F10 (full integrated path not assembled until then).
+
+## Wave 5 — F8, F9, F10 + F11 gate — 2026-06-24  (fast-track; user "keep building")
+
+F8's builder crashed before emitting its verdict (harness StructuredOutput cap) but had written all files; parent verified from disk. Full suite **159 passed**.
+
+**F8 — Streaming chat UI** -> `proved` (observed): live uvicorn — GET / serves the page; POST /chat/stream emits NDJSON token+done events (fetch()-over-POST, not EventSource); POST /upload sets state.upload_path; GET /trace populates; collapsible trace panel hosts F6. tests/test_ui.py in the 159.
+**F9 — Warm conversation** -> `proved` (sign-off, self): live tone warm/plain/human, one question at a time, <=5 enforced by F5. User waived the user sign-off under time pressure; parent self-judged.
+**F10 — End-to-end** -> `proved` (observed): parent wired the new `fill_1040_pdf` tool (validate_return gate -> fill_1040 -> state.pdf_bytes) into the registry + system prompt. scripts/smoke_e2e.py: ONE live turn ran extract_w2->set_filing_status->compute_1040->fill_1040_pdf; 771 KB filled official 2025 1040 (name + refund $238); downloadable via GET /download.
+**F11 — Public deployment** -> `needs-you`: the live-URL deploy is the user's outward action (Render account + push to public GitHub). render.yaml + pip requirements.txt committed; start cmd uvicorn app.main:app --host 0.0.0.0 --port $PORT; one-command local run verified serving the full flow. Awaiting the live URL.
+
+**Status: 11/12 proved.** The app is functionally complete and works end-to-end locally; only the public deploy (user gate) remains.
