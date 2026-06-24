@@ -5,11 +5,7 @@
     "started": "2026-06-24T20:20:06Z",
     "tokens_spent": 0,
     "wall_clock_seconds": 0,
-    "current_features": [
-      "F5",
-      "F6",
-      "F7"
-    ]
+    "current_features": []
   },
   "features": {
     "F1": {
@@ -76,21 +72,66 @@
       "needs_you": null
     },
     "F5": {
-      "status": "building",
+      "status": "proved",
       "attempts": 0,
-      "evidence": [],
+      "evidence": [
+        {
+          "method": "test",
+          "ok": true,
+          "ref": "uv run pytest tests/test_guardrails.py: 37 passed; on-task refusal, 6th ask_user blocked, validate_return invariants reject tampered return, redact_ssn masks, format_refund_owed templates the number",
+          "at": "2026-06-24T20:48:08Z",
+          "note": "5 code-enforced gates"
+        },
+        {
+          "method": "observed",
+          "ok": true,
+          "ref": "install_guardrails() wired into app startup; live smoke_trace shows the ≤5 budget refusal firing on the real route (record #5 refuse: Question budget spent) and visible in /trace",
+          "at": "2026-06-24T20:48:08Z",
+          "note": "guardrails enforced + visible on real route"
+        }
+      ],
       "needs_you": null
     },
     "F6": {
-      "status": "building",
+      "status": "proved",
       "attempts": 0,
-      "evidence": [],
+      "evidence": [
+        {
+          "method": "test",
+          "ok": true,
+          "ref": "uv run pytest tests/test_observe.py: 13 passed; structured records for tool/talk/refuse, SSN redacted at write",
+          "at": "2026-06-24T20:48:08Z",
+          "note": "trace records"
+        },
+        {
+          "method": "observed",
+          "ok": true,
+          "ref": "uv run python scripts/smoke_trace.py: exit 0, 7 turn-by-turn records over GET /trace (extract_w2->ask_user[question captured]->set_status->compute->talk->refuse->talk), raw SSN absent",
+          "at": "2026-06-24T20:48:08Z",
+          "note": "live /trace, re-run by parent"
+        }
+      ],
       "needs_you": null
     },
     "F7": {
-      "status": "building",
+      "status": "proved",
       "attempts": 0,
-      "evidence": [],
+      "evidence": [
+        {
+          "method": "test",
+          "ok": true,
+          "ref": "uv run pytest tests/test_filing_status.py: 18 passed; goldens per status (Single std15000/tax2762/refund238; MFJ 30000/1000/2000; MFS 15000/2762/238; HoH 22500/1760/1240); PDF sets exactly its filing-status checkbox /1",
+          "at": "2026-06-24T20:48:08Z",
+          "note": "all 4 statuses recompute + fill"
+        },
+        {
+          "method": "observed",
+          "ok": true,
+          "ref": "scripts/smoke_filing_status.py live: a real conversation changes status and the std deduction/tax/refund visibly recompute (carried state)",
+          "at": "2026-06-24T20:48:08Z",
+          "note": "status-change recompute"
+        }
+      ],
       "needs_you": null
     },
     "F8": {

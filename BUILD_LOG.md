@@ -45,3 +45,13 @@ Full suite re-run **77 passed**.
 - Seams for later: ask_user question surfaces via tool result not NL prose (F8 must render it); ≤5 budget cap + question_turn_contract are F5's (hook installed).
 
 **Checkpoints:** fresh-eyes reviewer deferred (2 of max 2 — MUST run next wave); walkthrough no-op (no full integrated path yet).
+
+## Wave 3 — F5, F6, F7 — 2026-06-24  (fast-track)
+
+Full suite **145 passed**. Parent wired `install_guardrails()` into app startup (the F5 integration seam).
+
+**F5 — Guardrails enforced + visible** → `proved` (test + observed): 5 code gates (on-task refusal, ≤5 turn contract, validate_return runtime invariants, redact_ssn, format_refund_owed server-template). Live smoke shows the budget refusal firing on the real route and appearing in /trace. NOTE for F10 integration: call `validate_return(state.computed)` before any PDF fill, and use `format_refund_owed(state.computed)` for the final chat number (F5 left these as integration calls, not dispatch-hook gates).
+**F6 — Live observation trace** → `proved` (observed + test): observe.record at every loop decision point; GET /trace; SSN redacted at write; ask_user question text captured. 13 tests + live 7-record smoke.
+**F7 — Filing-status variation** → `proved` (test + observed): hand-computed goldens per status; PDF checkbox per status; live status-change recompute. 18 tests.
+
+**Checkpoints:** fresh-eyes reviewer SKIPPED per user time-pressure waiver (deterministic validators green; honest note). Walkthrough deferred to F10 (full integrated path not assembled until then).

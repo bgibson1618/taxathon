@@ -22,7 +22,12 @@ from pydantic import BaseModel
 load_dotenv()
 
 from app.agent import GREETING, create_session, get_session, initial_messages, run_turn
+from app.guardrails import install_guardrails
 from app.observe import get_trace
+
+# F5: wire the code-enforced guardrails into the agent loop's dispatch hook at startup
+# (on-task refusal, ≤5-question turn contract). Parent-owned integration seam.
+install_guardrails()
 
 app = FastAPI(title="Taxathon", description="Agentic tax-filing assistant")
 
