@@ -30,3 +30,18 @@ roots built concurrently by parallel `implementer` agents; reconciled by indepen
 **Checkpoints:**
 - Drift (F20): deterministic validators green (state valid, scheduler resolves). Fresh-eyes reviewer **deferred** — wave 1 is isolated root modules, nothing integrated yet (bounded deferral 1 of max 2; will run by the first integration wave).
 - Walkthrough (F36): no-op — no integrated user path assembled yet.
+
+## Wave 2 — F3, F4 — 2026-06-24  (fast-track: user waived deep ceremony)
+
+Full suite re-run **77 passed**.
+
+**F3 — Filled official 2025 1040 PDF** → `proved` (test + sign-off [self])
+- Route: discovered AcroForm field names by /Rect Y-position vs extracted line labels (tooltips absent); validated sentinel fills survive flatten; on-value `/1` for filing-status checkbox.
+- Proof: `uv run pytest tests/test_pdf.py` 15 passed; parent rendered the sample to PNG and eyeballed a genuine populated 2025 1040 (refund $238). Sign-off self-accepted (user waived); money-cell pixel alignment per research caveat.
+
+**F4 — Agent chat loop + tools + state** → `proved` (observed)
+- Route: hand-rolled `while finish_reason=='tool_calls'` loop; tiny JSON-schema-subset arg validator; tool callables mutate SessionState (LLM never authors a number); guardrail no-op seam for F5; injectable llm_fn for mocked unit tests.
+- Proof: `scripts/smoke_agent.py` live — dispatched extract_w2/set_filing_status/compute_1040, carried state across turns, refund $238; `uv run pytest tests/test_agent.py` 23 passed.
+- Seams for later: ask_user question surfaces via tool result not NL prose (F8 must render it); ≤5 budget cap + question_turn_contract are F5's (hook installed).
+
+**Checkpoints:** fresh-eyes reviewer deferred (2 of max 2 — MUST run next wave); walkthrough no-op (no full integrated path yet).

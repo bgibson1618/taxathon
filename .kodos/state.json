@@ -37,15 +37,38 @@
       "needs_you": null
     },
     "F3": {
-      "status": "todo",
+      "status": "proved",
       "attempts": 0,
-      "evidence": [],
+      "evidence": [
+        {
+          "method": "test",
+          "ok": true,
+          "ref": "uv run pytest tests/test_pdf.py: 15 passed; values present in extracted page text; every field_map name exists in vendored form",
+          "at": "2026-06-24T20:38:47Z",
+          "note": "fills official 2025 1040, drops /XFA, flatten; SSN masked; refund XOR"
+        },
+        {
+          "method": "sign-off",
+          "ok": true,
+          "ref": "parent rendered fixtures/sample_filled_1040.pdf p1 -> PNG, eyeballed: genuine official 2025 1040, populated (name, wages, refund $238). Self-accepted under time pressure (user waived user sign-off); pixel-alignment of money cells per research caveat",
+          "at": "2026-06-24T20:38:47Z",
+          "note": "visual sign-off self-verified"
+        }
+      ],
       "needs_you": null
     },
     "F4": {
-      "status": "todo",
+      "status": "proved",
       "attempts": 0,
-      "evidence": [],
+      "evidence": [
+        {
+          "method": "observed",
+          "ok": true,
+          "ref": "uv run python scripts/smoke_agent.py: live model dispatched extract_w2/ask_user/set_filing_status/compute_1040, carried W-2+status+computed across turns, refund $238; 23 unit tests pass (mocked LLM)",
+          "at": "2026-06-24T20:38:47Z",
+          "note": "agentic core works end-to-end on live model"
+        }
+      ],
       "needs_you": null
     },
     "F5": {
