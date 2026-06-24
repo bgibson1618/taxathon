@@ -222,6 +222,38 @@ def _tool_ask_user(state: SessionState, *, question: str) -> dict[str, Any]:
     return {"ok": True, "question": question, "questions_asked": state.questions_asked}
 
 
+def _tool_fill_1040_pdf(state: SessionState) -> dict[str, Any]:
+    """Fill the official 2025 Form 1040 PDF from the computed return (F10).
+
+    Runs F5's ``validate_return`` no-fabrication gate FIRST (an inconsistent return
+    never reaches the form), then fills the vendored official PDF and stores the
+    bytes on ``state.pdf_bytes`` so ``GET /download`` can serve it. The number the
+    user is told is server-templated via ``format_refund_owed`` — the model never
+    authors it. Imports are deferred to avoid a tools<->guardrails import cycle.
+    """
+    if state.computed is None:
+        return {"ok": False, "error": "Cannot fill the form yet — the return has not been computed."}
+    if state.w2 is None:
+        return {"ok": False, "error": "Cannot fill the form yet — no W-2 has been extracted."}
+
+    from app.guardrails import format_refund_owed, validate_return
+
+    try:
+        validate_return(state.computed, state=state)
+    except Exception as exc:  # ReturnConsistencyError — block a fabricated/inconsistent return
+        return {"ok": False, "error": f"The return failed its consistency check; not filling: {exc}"}
+
+    from app.pdf.fill import fill_1040
+
+    state.pdf_bytes = fill_1040(state.computed, state.w2, state.computed.filing_status)
+    return {
+        "ok": True,
+        "summary": format_refund_owed(state.computed),
+        "bytes": len(state.pdf_bytes),
+        "download_ready": True,
+    }
+
+
 # ---------------------------------------------------------------------------
 # The registry.
 # ---------------------------------------------------------------------------
@@ -267,6 +299,16 @@ REGISTRY: dict[str, Tool] = {
         ),
         parameters={"type": "object", "properties": {}, "required": []},
         func=_tool_compute_1040,
+    ),
+    "fill_1040_pdf": Tool(
+        name="fill_1040_pdf",
+        description=(
+            "Fill out the official 2025 IRS Form 1040 PDF from the computed return so "
+            "the user can download it. Call this AFTER compute_1040 has succeeded. "
+            "Takes no arguments; it uses the stored computed return."
+        ),
+        parameters={"type": "object", "properties": {}, "required": []},
+        func=_tool_fill_1040_pdf,
     ),
     "ask_user": Tool(
         name="ask_user",
