@@ -11,6 +11,8 @@ F4 adds the two agent routes:
 """
 from __future__ import annotations
 
+from typing import Any
+
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -20,6 +22,7 @@ from pydantic import BaseModel
 load_dotenv()
 
 from app.agent import GREETING, create_session, get_session, initial_messages, run_turn
+from app.observe import get_trace
 
 app = FastAPI(title="Taxathon", description="Agentic tax-filing assistant")
 
@@ -86,3 +89,26 @@ def chat(req: ChatRequest) -> ChatResponse:
         reply=result.content,
         tool_calls=result.tool_calls_made,
     )
+
+
+# ---------------------------------------------------------------------------
+# F6 — live observation trace
+# ---------------------------------------------------------------------------
+@app.get("/trace/{session_id}")
+def trace(session_id: str) -> dict[str, Any]:
+    """Return the live, SSN-redacted decision/tool/guardrail trail for a session.
+
+    Every decision point in the loop (tool dispatch, talk turn, refusal) is
+    recorded into ``state.trace`` as it happens (F6), and the records are redacted
+    at write time — so this is the judge-safe, turn-by-turn view that the UI panel
+    (F8) polls live. A missing/expired session is a 404 (same contract as /chat),
+    so a stale poll fails cleanly instead of returning an empty trail forever.
+    """
+    state = get_session(session_id)
+    if state is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found or expired. Start a new session via POST /session.",
+        )
+    records = get_trace(state)
+    return {"session_id": session_id, "records": records, "count": len(records)}

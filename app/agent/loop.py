@@ -29,6 +29,7 @@ from app.agent import tools
 from app.agent.state import SessionState
 from app.config import PRIMARY_MODEL
 from app.llm import LLMError, chat_completion, extract_tool_calls, first_message
+from app.observe import record
 
 logger = logging.getLogger(__name__)
 
@@ -126,6 +127,62 @@ def _finish_reason(response: dict[str, Any]) -> Optional[str]:
     return choices[0].get("finish_reason")
 
 
+def _summarize_tool_result(name: str, result: dict[str, Any]) -> str:
+    """A short, judge-readable summary of a tool result for the trace (F6).
+
+    Kept compact (the full payload is already in the transcript). For ``ask_user``
+    it surfaces the *question text* — per F4, questions reach the user via the tool
+    result, not NL prose, so the trace must capture the question itself to be a
+    faithful turn-by-turn record. Redaction happens at ``record`` write-time.
+    """
+    if not isinstance(result, dict):
+        return str(result)[:200]
+    if name == "ask_user" and result.get("question"):
+        return f"asked: {result['question']}"
+    if not result.get("ok", True):
+        # A tool/guardrail failure: surface the error so the judge sees why.
+        return f"error: {result.get('error', 'tool reported failure')}"
+    # A successful tool: surface the most salient fields without dumping the lot.
+    salient = [
+        f"{k}={result[k]}"
+        for k in ("filing_status", "wages", "refund", "amount_owed", "questions_asked")
+        if k in result
+    ]
+    return ("ok " + ", ".join(salient)).strip() if salient else "ok"
+
+
+def _trace_args(raw_args: Any) -> dict[str, Any]:
+    """Best-effort parse of a tool_call's raw ``arguments`` into a dict for the trace.
+
+    The model sends ``arguments`` as a JSON string (or, in tests, a dict). We parse
+    leniently here purely for the trace record — dispatch does its own strict
+    validation. A value we cannot parse into a dict is preserved as ``{"raw": ...}``
+    so the record still shows *what was attempted*. Redaction is applied later in
+    ``record``.
+    """
+    if isinstance(raw_args, dict):
+        return raw_args
+    if isinstance(raw_args, str) and raw_args.strip():
+        try:
+            parsed = json.loads(raw_args)
+        except json.JSONDecodeError:
+            return {"raw": raw_args}
+        return parsed if isinstance(parsed, dict) else {"raw": parsed}
+    return {}
+
+
+def _guardrail_verdict(name: str, result: dict[str, Any]) -> tuple[str, str]:
+    """Map a tool result to a (decision, verdict) pair for the trace.
+
+    A guardrail *block* (the F5 hook denied the call — ``blocked: True``) is a
+    ``refuse`` decision with a ``"refuse"`` verdict; everything else that ran is a
+    ``tool`` decision that was ``"allow"``-ed through the gate.
+    """
+    if isinstance(result, dict) and result.get("blocked"):
+        return "refuse", "refuse"
+    return "tool", "allow"
+
+
 def run_turn(
     state: SessionState,
     user_msg: Optional[str],
@@ -168,6 +225,13 @@ def run_turn(
             content = message.get("content") or ""
             # Record the assistant's final message in the transcript.
             state.messages.append({"role": "assistant", "content": content})
+            # F6 — record the natural-language ("talk") turn so the trace captures
+            # the agent's spoken decision, not just its tool dispatches.
+            record(
+                state,
+                "talk",
+                result_summary=content,
+            )
             return TurnResult(
                 content=content,
                 tool_calls_made=tool_calls_made,
@@ -183,12 +247,29 @@ def run_turn(
             name = fn.get("name", "")
             raw_args = fn.get("arguments")
             tool_calls_made.append(name)
+            trace_args = _trace_args(raw_args)
+            started = time.perf_counter()
             try:
                 result = tools.dispatch(state, name, raw_args)
             except tools.ToolError as exc:
                 # Malformed call: no tool body ran. Report it back so the model
                 # can correct itself, and keep the loop alive.
                 result = {"ok": False, "error": f"Invalid tool call: {exc}"}
+            latency_ms = (time.perf_counter() - started) * 1000.0
+
+            # F6 — record this tool dispatch (or refusal, if a guardrail blocked
+            # it). Args + summary are SSN-redacted at write time inside record().
+            decision, verdict = _guardrail_verdict(name, result)
+            record(
+                state,
+                decision,
+                tool_name=name,
+                args=trace_args,
+                result_summary=_summarize_tool_result(name, result),
+                guardrail_verdict=verdict,
+                latency_ms=latency_ms,
+            )
+
             state.messages.append(
                 {
                     "role": "tool",
@@ -208,6 +289,14 @@ def run_turn(
         "rephrasing, or let me know how you'd like to continue?"
     )
     state.messages.append({"role": "assistant", "content": fallback})
+    # F6 — the guard-trip fallback is still a spoken turn; record it so the trace
+    # shows the loop ended gracefully rather than silently.
+    record(
+        state,
+        "talk",
+        result_summary=fallback,
+        guardrail_verdict="max_iterations",
+    )
     return TurnResult(
         content=fallback,
         tool_calls_made=tool_calls_made,
