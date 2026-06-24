@@ -10,6 +10,9 @@ dependencies = [
     "python-dotenv>=1.0",
     "httpx>=0.27",
     "pydantic>=2",
+    # F8 — multipart W-2 upload (POST /upload). FastAPI needs python-multipart
+    # to parse Form/File request bodies.
+    "python-multipart>=0.0.9",
 ]
 
 [dependency-groups]

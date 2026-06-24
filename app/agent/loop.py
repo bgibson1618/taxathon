@@ -120,6 +120,20 @@ def _call_llm_with_retry(
         )
 
 
+def _emit_progress(progress: Optional[Callable[[dict[str, Any]], None]], event: dict[str, Any]) -> None:
+    """Invoke the F8 progress callback, swallowing any error.
+
+    Progress events are pure observability for the streaming UI; a failure here
+    (a closed client, a buggy callback) must never break the agent loop.
+    """
+    if progress is None:
+        return
+    try:
+        progress(event)
+    except Exception:  # noqa: BLE001 — observability must not break the loop
+        logger.debug("progress callback raised; ignoring", exc_info=True)
+
+
 def _finish_reason(response: dict[str, Any]) -> Optional[str]:
     choices = response.get("choices") or []
     if not choices:
@@ -183,12 +197,21 @@ def _guardrail_verdict(name: str, result: dict[str, Any]) -> tuple[str, str]:
     return "tool", "allow"
 
 
+#: A progress callback (F8 streaming seam). The loop invokes it with a small
+#: event dict at notable points so a streaming caller can emit live progress —
+#: principally ``{"type": "tool", "name": <tool>}`` just before each tool runs,
+#: so a tool-running turn shows a working indicator instead of dead air. It is
+#: ``None`` by default, so the non-streaming ``/chat`` path is unaffected.
+ProgressFn = Callable[[dict[str, Any]], None]
+
+
 def run_turn(
     state: SessionState,
     user_msg: Optional[str],
     *,
     model: str = PRIMARY_MODEL,
-    llm_fn: LLMFn = chat_completion,
+    llm_fn: Optional[LLMFn] = None,
+    progress: Optional[ProgressFn] = None,
 ) -> TurnResult:
     """Run one user turn to completion and return the assistant's reply.
 
@@ -204,11 +227,27 @@ def run_turn(
         user_msg: the new user message, or ``None`` to let the model act on the
             existing transcript (e.g. right after a W-2 upload).
         model: the OpenRouter model id (defaults to the pinned primary).
-        llm_fn: the chat-completion callable (injection seam for tests).
+        llm_fn: the chat-completion callable (injection seam for tests). When
+            ``None`` (the default) the module-level :func:`chat_completion` is
+            resolved at call time, so a monkeypatch of ``loop.chat_completion``
+            (e.g. the F8 stream tests) is honoured without threading ``llm_fn``
+            through the HTTP route.
+        progress: an optional callback (F8 streaming). Called with a small event
+            dict before each tool dispatch — ``{"type": "tool", "name": <tool>}``
+            — so a streaming caller can render a live working indicator instead of
+            dead air during tool turns. ``None`` keeps the non-streaming path
+            unchanged. A raised exception from the callback is swallowed so
+            observability can never break the loop.
 
     Returns:
         A :class:`TurnResult` with the assistant's reply and the tools fired.
     """
+    # Resolve the LLM callable at call time so a monkeypatch of the module-level
+    # `chat_completion` (the F8 stream tests) is picked up; an explicit `llm_fn`
+    # (the F4 unit tests) still wins.
+    if llm_fn is None:
+        llm_fn = chat_completion
+
     if user_msg is not None:
         state.messages.append({"role": "user", "content": user_msg})
 
@@ -248,6 +287,10 @@ def run_turn(
             raw_args = fn.get("arguments")
             tool_calls_made.append(name)
             trace_args = _trace_args(raw_args)
+            # F8 — emit a tool-progress event so a streaming caller can show a
+            # live working indicator (no dead air) while this tool runs. Best
+            # effort: a callback error must never break the loop.
+            _emit_progress(progress, {"type": "tool", "name": name})
             started = time.perf_counter()
             try:
                 result = tools.dispatch(state, name, raw_args)

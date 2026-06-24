@@ -5,7 +5,9 @@
     "started": "2026-06-24T20:20:06Z",
     "tokens_spent": 0,
     "wall_clock_seconds": 0,
-    "current_features": []
+    "current_features": [
+      "F8"
+    ]
   },
   "features": {
     "F1": {
@@ -135,7 +137,7 @@
       "needs_you": null
     },
     "F8": {
-      "status": "todo",
+      "status": "building",
       "attempts": 0,
       "evidence": [],
       "needs_you": null

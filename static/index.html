@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Taxathon — file your 2025 return</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <!-- Cold-start hint: Render free tier can take ~30-60s to wake (NFR). Shown on
+       first load and hidden once the session is minted. -->
+  <div id="waking" class="waking" role="status" aria-live="polite">
+    Waking the assistant up&hellip; the first response can take up to a minute on a cold start.
+  </div>
+
+  <main class="page">
+    <header class="masthead">
+      <h1>Taxathon</h1>
+      <p class="tagline">Chat your single W-2 into a completed 2025 Form&nbsp;1040.</p>
+    </header>
+
+    <!-- The conversation thread. role=log + aria-live so new messages are announced. -->
+    <section id="thread" class="thread" role="log" aria-live="polite" aria-label="Conversation">
+      <!-- messages are appended here -->
+    </section>
+
+    <!-- Working / typing indicator. aria-hidden toggled with the .visible class. -->
+    <div id="indicator" class="indicator" role="status" aria-live="polite" hidden>
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span id="indicator-label" class="indicator-label">Working&hellip;</span>
+    </div>
+
+    <form id="composer" class="composer" autocomplete="off">
+      <label class="upload" title="Upload your W-2">
+        <input id="file" type="file" accept="application/pdf,.pdf" />
+        <span class="upload-text">Upload W-2</span>
+      </label>
+      <input
+        id="message"
+        class="message-input"
+        type="text"
+        name="message"
+        placeholder="Type a message and press Enter…"
+        aria-label="Type a message"
+        enterkeyhint="send"
+      />
+      <button id="send" class="send" type="submit">Send</button>
+    </form>
+
+    <div class="actions">
+      <button id="download" class="download" type="button" disabled>
+        Download filled 1040
+      </button>
+    </div>
+
+    <!-- F6 trace panel, hosted by F8. Collapsible; polls GET /trace/{sid}. -->
+    <details id="trace-panel" class="trace-panel">
+      <summary>Show agent trace</summary>
+      <div id="trace-body" class="trace-body" aria-live="polite">
+        <p class="trace-empty">No agent activity yet.</p>
+      </div>
+    </details>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
