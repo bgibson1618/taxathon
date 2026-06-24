@@ -9,15 +9,31 @@
   },
   "features": {
     "F1": {
-      "status": "todo",
+      "status": "proved",
       "attempts": 0,
-      "evidence": [],
+      "evidence": [
+        {
+          "method": "test",
+          "ok": true,
+          "ref": "uv run pytest tests/test_tax.py: 18 passed (full suite 39 passed); independent bracket-walk cross-check matched all goldens",
+          "at": "2026-06-24T20:28:25Z",
+          "note": "deterministic 2025 1040 engine; constants cite Rev. Proc. 2024-40"
+        }
+      ],
       "needs_you": null
     },
     "F2": {
-      "status": "todo",
+      "status": "proved",
       "attempts": 0,
-      "evidence": [],
+      "evidence": [
+        {
+          "method": "test",
+          "ok": true,
+          "ref": "uv run pytest tests/test_w2.py: 15 passed; fixture parses to expected; masked_ssn ***-**-6789; range validation rejects",
+          "at": "2026-06-24T20:28:25Z",
+          "note": "pypdf AcroForm fixture + deterministic parse; SSN code-side"
+        }
+      ],
       "needs_you": null
     },
     "F3": {
@@ -75,9 +91,24 @@
       "needs_you": null
     },
     "F12": {
-      "status": "todo",
+      "status": "proved",
       "attempts": 0,
-      "evidence": [],
+      "evidence": [
+        {
+          "method": "test",
+          "ok": true,
+          "ref": "uv run pytest tests/test_config.py: 5 passed; env loads, fail-loud on missing key, ids tools-filtered",
+          "at": "2026-06-24T20:28:25Z",
+          "note": "model+env preflight"
+        },
+        {
+          "method": "observed",
+          "ok": true,
+          "ref": "uv run python scripts/smoke_tools.py: exit 0; live tool_call from anthropic/claude-sonnet-4.6",
+          "at": "2026-06-24T20:28:25Z",
+          "note": "live OpenRouter tool-calling confirmed; fallback claude-sonnet-4.5"
+        }
+      ],
       "needs_you": null
     }
   }
