@@ -1,0 +1,14 @@
+# Render Blueprint — Taxathon. Connect this repo on Render (or use "Public Git Repository"
+# with the repo URL) and it provisions a free web service from these settings.
+services:
+  - type: web
+    name: taxathon
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: OPENROUTER_API_KEY
+        sync: false          # set this in the Render dashboard (secret) — do NOT commit it
+      - key: PYTHON_VERSION
+        value: "3.12"
