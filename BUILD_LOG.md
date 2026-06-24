@@ -66,3 +66,26 @@ F8's builder crashed before emitting its verdict (harness StructuredOutput cap) 
 **F11 — Public deployment** -> `needs-you`: the live-URL deploy is the user's outward action (Render account + push to public GitHub). render.yaml + pip requirements.txt committed; start cmd uvicorn app.main:app --host 0.0.0.0 --port $PORT; one-command local run verified serving the full flow. Awaiting the live URL.
 
 **Status: 11/12 proved.** The app is functionally complete and works end-to-end locally; only the public deploy (user gate) remains.
+
+## Closeout — 12/12 proved, phase done — 2026-06-24
+
+**Delivered:** an agentic tax-filing assistant, live at **https://taxathon.onrender.com/**. Upload a fake
+W-2 → warm ≤5-question chat → download a completed **official 2025 Form 1040** (verified $238 refund). All
+four pillars enforced + visible; 159 tests green; deterministic tax math + official-PDF fill + live trace.
+
+**Closeout gate (all passed against the final tree):** re-ran the verification command (159 passed);
+re-observed every observed-proof feature (F4/F6/F7/F8/F10/F11/F12) on the real route — incl. the live Render
+URL streaming the flow and F7's single→HoH recompute (refund 238→1240); whole-product walkthrough
+(upload→chat→download) passed locally and live. Evidence under `.kodos/evidence/`.
+
+**Front door refreshed:** README.md (live URL + run/verify/deploy), DECISIONS.md (half-page note),
+IMPLEMENTATION.md (rendered snapshot).
+
+**Caveats:** v1 scope — single W-2, fake data, not tax advice; image/OCR upload, MFJ/MFS spouse-identity
+fields, and extra credit lines are out of scope. Money-cell pixel alignment in the PDF is "values correct +
+legible," not pixel-perfect (research caveat).
+
+**Process notes for next time (learnings store capture deferred under the time waiver):** (1) a builder can
+crash on the StructuredOutput verdict cap *after* doing the work — reconcile from disk, not the verdict.
+(2) Strict per-builder file ownership + a single shared-file editor per wave kept the parallel fan-out
+collision-free. (3) Greenfield needs a serial substrate scaffold before fanning out builders.

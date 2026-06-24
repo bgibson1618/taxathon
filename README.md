@@ -1,38 +1,56 @@
 # Taxathon — Agentic Tax-Filing Assistant
 
-A web chat that helps a person file a U.S. federal **Form 1040 (tax year 2025)** from a single
-W-2 — a short, warm conversation in, a completed, downloadable 1040 out. Built for a hackathon
-whose bar is a clean, observable agent **harness** (chat loop, tools, guardrails, observation).
+Chat your single W-2 into a completed **2025 IRS Form 1040** — a warm, ≤5-question conversation in,
+a downloadable filled official 1040 out.
 
-## Status
+**🔗 Live demo:** https://taxathon.onrender.com/
+**▶️ One-command local run:** `uv run uvicorn app.main:app --host 0.0.0.0 --port 8000` → http://localhost:8000
 
-Early discovery. Built with [KodOS](https://github.com/) — a methodology-first agentic workflow.
-The current intake brief is in `INTAKE.md`.
+> Hackathon prototype. Fake data only — **not tax advice**, no real PII, no e-filing.
 
-## What this is
+## What it does
 
-A small agentic system: the user shows up with a (fake) W-2 for a ~$40k/year earner, the agent
-asks **no more than 5 questions** in a warm, human tone, fills out a 2025 IRS Form 1040, and lets
-the user download it. The interesting part — and what the hackathon weights most heavily — is the
-architecture of the harness that demonstrates four pillars **enforced and visible, not cosmetic**:
-a stateful chat loop, real tools, guardrails, and an observable decision/action trail. The system
-deploys to a public URL (Render or comparable). Fake data only — no real PII, no e-filing, not tax
-advice.
+Upload the supplied fake W-2, have a short friendly chat, and download a completed, **official** 2025
+Form 1040. A judge can watch the agent's every decision live at `/trace`. Verified end-to-end: a
+single-W-2 ($40k) filer gets a correct **$238 refund** on a real filled PDF.
 
-## Getting oriented
+## The harness — four pillars, *enforced and visible* (not cosmetic)
 
-This project follows the KodOS read order — there is no `CONTEXT.md`:
+The interesting part is the architecture (a hand-rolled "Deterministic Spine, Agentic Skin"): the LLM
+only phrases conversation and picks tools; **every correctness/output step is deterministic Python**.
 
-- `INTAKE.md` — the intake brief (problem, users, constraints, environment)
-- `PRD.md` — product intent (once written)
-- `ARCHITECTURE.md` — system shape and decisions (once written)
-- `FEATURES.md` — the feature plan (once written)
-- `IMPLEMENTATION.md` — current state and next step (during build)
+| Pillar | Where it lives | How it's enforced + visible |
+| --- | --- | --- |
+| **Chat loop** | `app/agent/loop.py` | A plain `while finish_reason=='tool_calls'` loop over OpenRouter; typed `SessionState` carries context across turns (`app/agent/state.py`). |
+| **Tools** | `app/agent/tools.py` | Typed registry; dispatch is `validate-args → guardrail-gate → run`. Real work: `extract_w2`, `set_filing_status`, `compute_1040`, `fill_1040_pdf`. The LLM never authors a number. |
+| **Guardrails** | `app/guardrails.py` | Five **code** gates: on-task refusal, ≤5-question turn contract, `validate_return` (no-fabrication recompute *before* any PDF fill), SSN redaction, server-templated refund/owed. |
+| **Observation** | `app/observe.py` + `GET /trace` | Every decision/tool/refusal → a redacted `TraceRecord`, watchable live in the UI's "Show agent trace" panel. |
 
-Run `/kodos:go` to start or resume the workflow.
+Deterministic core: `app/tax/compute.py` (+ `constants_2025.py`, cited to Rev. Proc. 2024-40) does the
+2025 1040 math; `app/pdf/fill.py` fills the **vendored official** `assets/f1040_2025.pdf` with pypdf
+(drops `/XFA`, flattens); `app/w2/extract.py` parses the W-2 with SSN kept code-side.
 
-## Environment
+## Run & verify
 
-Python 3.12+ via **uv** on native Linux; **FastAPI** web chat; LLM via **OpenRouter**
-(`OPENROUTER_API_KEY` in `.env`). Verify with `uv run pytest`. Deploy target: Render (free tier),
-with a one-command local run as fallback.
+```bash
+uv sync                                  # install (Python 3.12)
+echo "OPENROUTER_API_KEY=sk-or-..." > .env
+uv run pytest                            # 159 tests, the verification command
+uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+## Deploy (Render)
+
+`render.yaml` is a Blueprint: New → **Blueprint** → select the repo → set `OPENROUTER_API_KEY` as a
+secret. Build `pip install -r requirements.txt`, start `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
+
+## Scope (v1)
+
+Single W-2, all four filing statuses recompute (Single/HoH fully fill the PDF; MFJ/MFS computation-focused).
+Out: image/OCR W-2 upload, spouse-identity fields, extra credit lines (EITC is $0 at the fixed $40k profile).
+See **`DECISIONS.md`** for the open-item choices and **`DECISION_LOG.md`** for the full record.
+
+## Project docs
+
+Built with [KodOS](https://github.com/). `PRD.md` · `ARCHITECTURE.md` · `FEATURES.md` (the ledger,
+12/12 proved) · `IMPLEMENTATION.md` (generated status) · `BUILD_LOG.md` (build journal) · `research/`.

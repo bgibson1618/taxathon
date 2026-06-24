@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "phase": "build",
+  "phase": "done",
   "run": {
     "started": "2026-06-24T20:20:06Z",
     "tokens_spent": 0,
@@ -67,6 +67,13 @@
           "ref": "uv run python scripts/smoke_agent.py: live model dispatched extract_w2/ask_user/set_filing_status/compute_1040, carried W-2+status+computed across turns, refund $238; 23 unit tests pass (mocked LLM)",
           "at": "2026-06-24T20:38:47Z",
           "note": "agentic core works end-to-end on live model"
+        },
+        {
+          "method": "observed",
+          "ok": true,
+          "ref": "smoke_e2e (final tree): loop dispatched extract_w2->set_filing_status->compute_1040->fill_1040_pdf, state carried across the turn",
+          "at": "2026-06-24T21:14:06Z",
+          "note": "closeout re-observe (F37) — passed against final integrated tree"
         }
       ],
       "needs_you": null
@@ -109,6 +116,13 @@
           "ref": "uv run python scripts/smoke_trace.py: exit 0, 7 turn-by-turn records over GET /trace (extract_w2->ask_user[question captured]->set_status->compute->talk->refuse->talk), raw SSN absent",
           "at": "2026-06-24T20:48:08Z",
           "note": "live /trace, re-run by parent"
+        },
+        {
+          "method": "observed",
+          "ok": true,
+          "ref": "live https://taxathon.onrender.com/trace populated; local trace smoke records tool/talk/refuse, SSN redacted",
+          "at": "2026-06-24T21:14:06Z",
+          "note": "closeout re-observe (F37) — passed against final integrated tree"
         }
       ],
       "needs_you": null
@@ -130,6 +144,13 @@
           "ref": "scripts/smoke_filing_status.py live: a real conversation changes status and the std deduction/tax/refund visibly recompute (carried state)",
           "at": "2026-06-24T20:48:08Z",
           "note": "status-change recompute"
+        },
+        {
+          "method": "observed",
+          "ok": true,
+          "ref": "smoke_filing_status (final tree): single->HoH recompute std 15000->22500, tax 2762->1760, refund 238->1240 on the carried W-2",
+          "at": "2026-06-24T21:14:06Z",
+          "note": "closeout re-observe (F37) — passed against final integrated tree"
         }
       ],
       "needs_you": null
@@ -144,6 +165,13 @@
           "ref": "live uvicorn: GET / serves the chat page; POST /chat/stream returns NDJSON token+done events (warm reply streamed); GET /trace populates; POST /upload sets state.upload_path; 159 tests incl tests/test_ui.py",
           "at": "2026-06-24T21:06:19Z",
           "note": "streaming fetch()-over-POST (not EventSource), upload, trace panel; builder crashed pre-verdict, parent verified from disk"
+        },
+        {
+          "method": "observed",
+          "ok": true,
+          "ref": "live URL: chat page served + POST /chat/stream NDJSON streaming on the deployed route",
+          "at": "2026-06-24T21:14:06Z",
+          "note": "closeout re-observe (F37) — passed against final integrated tree"
         }
       ],
       "needs_you": null
@@ -172,18 +200,30 @@
           "ref": "scripts/smoke_e2e.py: ONE turn dispatched extract_w2->set_filing_status->compute_1040->fill_1040_pdf; state.pdf_bytes=771554 (filled official 2025 1040, taxpayer name + refund $238 in extracted text); validate_return gates before fill; downloadable via GET /download",
           "at": "2026-06-24T21:06:19Z",
           "note": "real W-2 in -> downloadable filled 1040 out, end-to-end"
+        },
+        {
+          "method": "observed",
+          "ok": true,
+          "ref": "smoke_e2e (final tree): 771KB filled official 2025 1040 (taxpayer name + refund $238) produced and downloadable via /download",
+          "at": "2026-06-24T21:14:06Z",
+          "note": "closeout re-observe (F37) — passed against final integrated tree"
         }
       ],
       "needs_you": null
     },
     "F11": {
-      "status": "needs-you",
+      "status": "proved",
       "attempts": 0,
-      "evidence": [],
-      "needs_you": {
-        "since": "2026-06-24T21:06:19Z",
-        "reason": "Public-URL deploy is the user outward action (Render account + push to public GitHub; self-hosted GitLab is unsupported by Render). All config ready: render.yaml + pip requirements.txt committed; start cmd 'uvicorn app.main:app --host 0.0.0.0 --port $PORT'; OPENROUTER_API_KEY as a Render secret; one-command local run verified serving the full flow. Awaiting the live URL to fully prove F11."
-      }
+      "evidence": [
+        {
+          "method": "observed",
+          "ok": true,
+          "at": "2026-06-24T21:14:06Z",
+          "ref": "https://taxathon.onrender.com/ LIVE: GET /health ok, GET / serves the chat page, POST /chat/stream streams a live NDJSON reply from the real model on Render, GET /trace populated; render.yaml + pip requirements.txt deployed",
+          "note": "public URL deploy verified"
+        }
+      ],
+      "needs_you": null
     },
     "F12": {
       "status": "proved",
@@ -202,6 +242,13 @@
           "ref": "uv run python scripts/smoke_tools.py: exit 0; live tool_call from anthropic/claude-sonnet-4.6",
           "at": "2026-06-24T20:28:25Z",
           "note": "live OpenRouter tool-calling confirmed; fallback claude-sonnet-4.5"
+        },
+        {
+          "method": "observed",
+          "ok": true,
+          "ref": "live model anthropic/claude-sonnet-4.6 served tool-calls on the deployed Render server",
+          "at": "2026-06-24T21:14:06Z",
+          "note": "closeout re-observe (F37) — passed against final integrated tree"
         }
       ],
       "needs_you": null

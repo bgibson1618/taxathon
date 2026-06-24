@@ -1,0 +1,1 @@
+live: https://taxathon.onrender.com/ — /health ok, page served, /chat/stream NDJSON live reply, /trace populated (verified 2026-06-24T21:13:31Z)
