@@ -1,0 +1,6 @@
+{"ts":"2026-06-24T20:02:48Z","event":"created","role":"prebuild-adversarial","backend":"codex","message":"observable role run created"}
+{"ts":"2026-06-24T20:02:48Z","event":"launched","role":"prebuild-adversarial","backend":"codex","message":"tmux pane %1103"}
+{"ts":"2026-06-24T20:02:48Z","event":"started","role":"verifier","backend":"codex","message":"backend command starting"}
+{"ts":"2026-06-24T20:05:49Z","event":"finished","role":"verifier","backend":"codex","message":"backend command completed"}
+{"ts":"2026-06-24T20:06:14Z","event":"stopped","role":"prebuild-adversarial","backend":"agent-roster","message":"stop requested"}
+{"ts":"2026-06-24T20:06:14Z","event":"stopped","role":"team","backend":"agent-roster","message":"run stop requested"}

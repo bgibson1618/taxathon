@@ -1,0 +1,71 @@
+The plan has a solid deterministic-agent spine, but the ledger still contains scope drift, impossible dependencies, and proof claims that need tightening before a build loop can execute cleanly.
+
+## FINDINGS
+
+1. **F4’s dependency graph asks it to prove PDF filling before PDF filling exists.**  
+   **CITATION:** `/home/brent-gibson/projects/taxathon/FEATURES.md:65` — `- **Depends on:** F1, F2`; `/home/brent-gibson/projects/taxathon/FEATURES.md:74-75` — `The agent selects and dispatches real tools (... `fill_1040_pdf`), each doing real work`; `/home/brent-gibson/projects/taxathon/FEATURES.md:183-184` — `**F3 (PDF fill)** and **F4 (agent loop)** each depend only on F1+F2, so they parallelize`.  
+   **ANCHOR:** certain  
+   **WHY IT MATTERS:** A builder following the graph can start F4 before F3, but F4’s success criteria require the real `fill_1040_pdf` tool. That makes the planned proof impossible or encourages a mock.  
+   **DISPOSITION SUGGESTION:** amend: either remove `fill_1040_pdf` from F4’s proof and leave it to F10, or make F4 depend on F3.
+
+2. **End-to-end flow does not depend on the warm-conversation feature it claims to include.**  
+   **CITATION:** `/home/brent-gibson/projects/taxathon/FEATURES.md:153` — `- **Depends on:** F3, F5, F6, F8`; `/home/brent-gibson/projects/taxathon/FEATURES.md:155-156` — `the user uploads the fake W-2, has the warm ≤5-question chat`; `/home/brent-gibson/projects/taxathon/FEATURES.md:138-149` — `## F9 — Warm, human conversation` with `sign-off`.  
+   **ANCHOR:** certain  
+   **WHY IT MATTERS:** F10 can be marked complete before F9 sign-off, even though F10’s own functionality includes the warm chat.  
+   **DISPOSITION SUGGESTION:** amend: add F9 as an F10 dependency, or remove “warm” from F10 and let F9 remain the only warmth gate.
+
+3. **Best-effort 1040 lines are both in scope and explicitly dropped.**  
+   **CITATION:** `/home/brent-gibson/projects/taxathon/PRD.md:58-59` — `**Best-effort extension:** additional standard 1040 lines/credits...`; `/home/brent-gibson/projects/taxathon/FEATURES.md:11-13` — `stretch items ... best-effort credit lines) are deliberately out of this ledger`; `/home/brent-gibson/projects/taxathon/ARCHITECTURE.md:85-87` — `**Best-effort extra lines dropped from v1**`.  
+   **ANCHOR:** certain  
+   **WHY IT MATTERS:** Two honest reviewers could disagree on whether v1 is missing required scope or correctly following architecture.  
+   **DISPOSITION SUGGESTION:** amend: revise PRD §5/§7 to match the ledger, or add feature work for the specific best-effort lines retained.
+
+4. **Filing-status coverage is not the same as a completed 1040 for every status.**  
+   **CITATION:** `/home/brent-gibson/projects/taxathon/FEATURES.md:52-54` — `completed official IRS 2025 Form 1040 PDF with both taxpayer identity ... and the computed lines filled in`; `/home/brent-gibson/projects/taxathon/FEATURES.md:121-122` — `Single and HoH produce a fully-filled PDF; MFJ/MFS produce correct computed figures`; `/home/brent-gibson/projects/taxathon/ARCHITECTURE.md:121-122` — `MFJ/MFS spouse-identity PDF fields — stretch`.  
+   **ANCHOR:** firm  
+   **WHY IT MATTERS:** “Completed 1040” reads broader than “computed figures only,” especially for MFJ/MFS where spouse identity is part of the return.  
+   **DISPOSITION SUGGESTION:** amend: state that v1’s downloadable completed form is guaranteed only for Single/HoH, or collect/fill the missing spouse fields.
+
+5. **The W-2 ingest promise reads broader than the actual planned parser.**  
+   **CITATION:** `/home/brent-gibson/projects/taxathon/PRD.md:52-53` — `W-2 intake by file upload ... (PDF/image)`; `/home/brent-gibson/projects/taxathon/ARCHITECTURE.md:32` — `Deterministic-only pypdf AcroForm parse of the authored fixture`; `/home/brent-gibson/projects/taxathon/ARCHITECTURE.md:100-101` — `fake W-2 fixture with named AcroForm fields`.  
+   **ANCHOR:** firm  
+   **WHY IT MATTERS:** A judge may reasonably expect a fake W-2 PDF/image upload, while the plan actually supports a bespoke authored AcroForm fixture.  
+   **DISPOSITION SUGGESTION:** amend: define F2 as “supplied authored AcroForm fixture only,” or expand the parser/proof to cover the promised file classes.
+
+6. **The LLM is said not to hold numbers, but the final streamed turn states numbers.**  
+   **CITATION:** `/home/brent-gibson/projects/taxathon/ARCHITECTURE.md:15-18` — `the LLM owns only conversation phrasing and tool selection; it never owns a number`; `/home/brent-gibson/projects/taxathon/ARCHITECTURE.md:52` — `final STREAMED turn states refund/owed in plain language`; `/home/brent-gibson/projects/taxathon/FEATURES.md:92-93` — `checks the return ... before any PDF fill`.  
+   **ANCHOR:** certain  
+   **WHY IT MATTERS:** The no-fabrication gate protects the PDF path, not necessarily the chat response. The assistant could verbally misstate a correct computed result.  
+   **DISPOSITION SUGGESTION:** amend: make numeric final messages server-templated or add an outbound response check for any tax numbers the LLM emits.
+
+7. **The runtime “independent golden value” gate is underspecified.**  
+   **CITATION:** `/home/brent-gibson/projects/taxathon/FEATURES.md:92-93` — `recomputes and checks the return against an independent golden value before any PDF fill`; `/home/brent-gibson/projects/taxathon/ARCHITECTURE.md:29-30` — `validate_return (recompute + **independent golden checks**)`; `/home/brent-gibson/projects/taxathon/ARCHITECTURE.md:103-104` — `golden-tested against independent hand-computed cases`.  
+   **ANCHOR:** firm  
+   **WHY IT MATTERS:** Golden cases prove known fixtures; they are not a general runtime oracle unless the accepted input space is fixture-only.  
+   **DISPOSITION SUGGESTION:** amend: separate runtime validation from test goldens. Runtime should compare PDF-bound values to deterministic compute output; tests should hold the independent golden cases.
+
+8. **A critical external dependency remains open, but no feature gates it before agent-loop work.**  
+   **CITATION:** `/home/brent-gibson/projects/taxathon/ARCHITECTURE.md:67` — `Tool-calling reliability varies by route ... smoke-test one real W-2→1040 tool flow before committing`; `/home/brent-gibson/projects/taxathon/ARCHITECTURE.md:118-119` — `OpenRouter model id + fallback — pin the exact Claude model ... Smoke-test before commit.`  
+   **ANCHOR:** firm  
+   **WHY IT MATTERS:** F4/F10 depend on reliable tool calling, but the ledger has no explicit preflight feature or dependency for model selection/fallback.  
+   **DISPOSITION SUGGESTION:** amend: add a pre-build/F0 gate for model id, fallback id, and one real tool-calling smoke test before F4.
+
+9. **Question-budget counting has edge cases the plan does not settle.**  
+   **CITATION:** `/home/brent-gibson/projects/taxathon/FEATURES.md:88-89` — `a 6th user-facing question is refused, and only the `ask_user` tool's output may contain a question`; `/home/brent-gibson/projects/taxathon/NFR_UX.md:86-87` — `plain-language recovery ("I couldn't read the wages in Box 1 — what's the amount?")`; `/home/brent-gibson/projects/taxathon/ARCHITECTURE.md:41-42` — `POST /upload ... [0 questions]`.  
+   **ANCHOR:** tentative  
+   **WHY IT MATTERS:** Upload prompts, recovery prompts, greetings, and tool-output questions can be counted differently by builders and reviewers.  
+   **DISPOSITION SUGGESTION:** amend: define exactly what counts as a user-facing question, including upload/recovery exceptions.
+
+10. **The required DECISIONS deliverable is not represented in the executable feature ledger.**  
+   **CITATION:** `/home/brent-gibson/projects/taxathon/PRD.md:64-65` — `Deliverables: ... a short **`DECISIONS` note**`; `/home/brent-gibson/projects/taxathon/FEATURES.md:173-178` — F11 success criteria list deployment, local run, source, fixture, and vendored PDF, but not `DECISIONS`.  
+   **ANCHOR:** firm  
+   **WHY IT MATTERS:** The plan can finish all features while omitting an artifact tied to the “soundness of decisions” judging axis.  
+   **DISPOSITION SUGGESTION:** amend: add `DECISIONS`/`DECISION_LOG.md` presence and content as an F11 criterion or its own final-readiness feature.
+
+## NOTES
+
+No uncited notes.
+
+## Questions
+
+None.

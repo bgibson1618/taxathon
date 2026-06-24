@@ -1,0 +1,96 @@
+Observable agent run
+  run: verifier-g65g
+  role: verifier
+  backend: antigravity
+  workspace: /home/brent-gibson/projects/taxathon
+  prompt: /home/brent-gibson/projects/taxathon/work/agents/verifier-g65g/prebuild-feasibility/prompt.md
+  output: /home/brent-gibson/projects/taxathon/work/agents/verifier-g65g/prebuild-feasibility/output.md
+  log: /home/brent-gibson/projects/taxathon/work/agents/verifier-g65g/prebuild-feasibility/terminal.log
+
+Command: /home/brent-gibson/.local/bin/agy   --print <prompt.md>
+```text
+VERDICT: FAIL
+DIMENSIONS:
+  - feasibility: FAIL
+  - completeness: PASS
+  - consistency: FAIL
+BLOCKING:
+  - ARCHITECTURE.md: SSN masking logic in extract.py contradicts the need for raw SSN in fill.py.
+  - ARCHITECTURE.md: Drop of image parsing in extract.py creates a mismatch with the PRD.md scope.
+RIGOR: tuned
+```
+
+The proposed plan represents a solid, well-thought-out architectural skeleton, but it contains critical internal contradictions regarding SSN data handling, scope mismatch on W-2 file formats, and sequential toolchain orchestration that must be resolved prior to starting the build loop.
+
+### FINDINGS
+
+1. **SSN Masking and PDF Filling Contradiction**
+   - **CITATION:** From [ARCHITECTURE.md](file:///home/brent-gibson/projects/taxathon/ARCHITECTURE.md#L32): `| app/w2/extract.py + fixtures/fake_w2.pdf + w2/build_fixture.py | Deterministic-only pypdf AcroForm parse of the authored fixture into a validated W2 model; SSN parsed code-side and masked before anything leaves the module |` compared with [ARCHITECTURE.md](file:///home/brent-gibson/projects/taxathon/ARCHITECTURE.md#L31): `| app/pdf/fill.py ... | field_map covers identity/header fields (name, address, SSN, filing-status) AND numeric lines — a "completed" form... |`
+   - **ANCHOR:** certain
+   - **WHY IT MATTERS:** If the SSN is masked immediately inside the extraction module before it leaves [w2/extract.py](file:///home/brent-gibson/projects/taxathon/app/w2/extract.py), the raw SSN cannot be stored in `SessionState` or accessed by [pdf/fill.py](file:///home/brent-gibson/projects/taxathon/app/pdf/fill.py). As a result, the filled Form 1040 will either have a blank/masked SSN (e.g. `XXX-XX-XXXX`), or the PDF fill tool will crash due to missing data. If the raw SSN is stored to fill the PDF, the claim that it never leaves the module is false, risking accidental leakage in prompts, logs, or traces.
+   - **DISPOSITION SUGGESTION:** Amend the data schema in [ARCHITECTURE.md](file:///home/brent-gibson/projects/taxathon/ARCHITECTURE.md). Define a clear boundary: the parsed W-2 should yield a schema containing both a `raw_ssn` (which is kept server-side in the session state and only exposed to the PDF fill generator) and a `masked_ssn` (which is returned to the LLM tool call and trace logs).
+
+2. **Scope Mismatch on W-2 File Formats (PDF vs Image)**
+   - **CITATION:** From [PRD.md](file:///home/brent-gibson/projects/taxathon/PRD.md#L52): `- **W-2 intake by file upload** — the user uploads the supplied fake W-2 (PDF/image) and the agent extracts its fields.` compared with [ARCHITECTURE.md](file:///home/brent-gibson/projects/taxathon/ARCHITECTURE.md#L80): `2. **Deterministic-only W-2 ingest; LLM vision dropped from v1** — ... Deterministic parse of our authored fixture is ~100% reliable and keeps SSN code-side. Vision = documented stretch.`
+   - **ANCHOR:** firm
+   - **WHY IT MATTERS:** The product requirements commit to supporting W-2 uploads as both PDFs and images. However, the architecture drops vision models and OCR libraries, relying entirely on a deterministic AcroForm PDF parser. If a judge attempts to upload the fake W-2 as a PNG or JPEG, the application will fail to process it, violating the end-to-end success criteria.
+   - **DISPOSITION SUGGESTION:** Amend the specification. Either reinstate a basic OCR/vision fallback in the architecture to process images, or amend [PRD.md](file:///home/brent-gibson/projects/taxathon/PRD.md) and [NFR_UX.md](file:///home/brent-gibson/projects/taxathon/NFR_UX.md) to restrict the in-scope upload formats strictly to the provided AcroForm PDF fixture.
+
+3. **Multi-Step Agent Toolchain Orchestration Risks**
+   - **CITATION:** From [ARCHITECTURE.md](file:///home/brent-gibson/projects/taxathon/ARCHITECTURE.md#L55-L56): `Change-status path:  "actually I'm Head of Household" → set_filing_status → compute_1040 → fill_1040_pdf; the trace shows std deduction + tax visibly recompute.`
+   - **ANCHOR:** firm
+   - **WHY IT MATTERS:** A multi-step tool sequence (`set_filing_status` -> `compute_1040` -> `fill_1040_pdf`) requires the LLM to successfully execute multiple sequential calls to synchronize state. If the LLM halts, fails a schema validation, or exits early, the session state becomes corrupted (e.g. the standard deduction changes but the tax is not recomputed, or the PDF remains outdated). This increases API latency and creates high operational fragility.
+   - **DISPOSITION SUGGESTION:** Amend the tool definitions in [agent/tools.py](file:///home/brent-gibson/projects/taxathon/app/agent/tools.py) to remove `compute_1040` and `fill_1040_pdf` from the agent's tool registry. Let the agent only manage input tools (like `set_filing_status` or `extract_w2`), and configure the server to automatically run the math computation and PDF generation as downstream side-effects whenever inputs change.
+
+4. **Redundant Pre-PDF "No-Fabrication Gate" vs Chat Hallucinations**
+   - **CITATION:** From [FEATURES.md](file:///home/brent-gibson/projects/taxathon/FEATURES.md#L92-L93): `- The no-fabrication gate recomputes and checks the return against an independent golden value before any PDF fill; a tampered or inconsistent value is blocked from reaching the form.`
+   - **ANCHOR:** firm
+   - **WHY IT MATTERS:** Because the PDF-filling code is deterministic and reads directly from the server-side computed state, the LLM has no physical access to write or modify PDF values, making this gate redundant. However, the plan lacks any guardrail to verify that the LLM's *natural-language chat output* matches the computed numbers (e.g. the LLM hallucinating a refund in text that disagrees with the PDF).
+   - **DISPOSITION SUGGESTION:** Amend the guardrail logic in [guardrails.py](file:///home/brent-gibson/projects/taxathon/app/guardrails.py). Repurpose the gate to intercept or parse the LLM's final chat output before/during streaming, ensuring that any numbers output to the user in text match the computed values in `state.computed`.
+
+5. **Feasibility of Runtime "Independent Golden Checks" on Arbitrary Inputs**
+   - **CITATION:** From [ARCHITECTURE.md](file:///home/brent-gibson/projects/taxathon/ARCHITECTURE.md#L30): `validate_return is checked against independent golden cases from published IRS figures, not a same-path recompute, so it proves correctness, not just internal consistency (cross-backend defect #4)`
+   - **ANCHOR:** firm
+   - **WHY IT MATTERS:** If the application supports dynamic user inputs (like different W-2 wages or filing statuses), it is impossible for the guardrail `validate_return` to verify these against pre-calculated "published IRS golden cases" at runtime, because those cases only exist for specific discrete inputs. Running a dynamic check would require writing a secondary independent calculator in code, which is not represented in the architecture.
+   - **DISPOSITION SUGGESTION:** Amend the specification. Clarify that the "independent golden checks" are a test-time assertion verified in [pytest](file:///home/brent-gibson/projects/taxathon/FEATURES.md#L18) against IRS publications, whereas the runtime `validate_return` guardrail checks internal consistency (e.g., verifying that taxable income is equal to AGI minus deduction, floored at zero) to prevent memory corruption or state tampering.
+
+6. **Missing Environment File Loader Dependency**
+   - **CITATION:** From [PRD.md](file:///home/brent-gibson/projects/taxathon/PRD.md#L105-L106): `- Environment: Python 3.12+ via uv; FastAPI web app; LLM via OpenRouter (OPENROUTER_API_KEY in gitignored .env); verification uv run pytest; native Linux/bash.`
+   - **ANCHOR:** firm
+   - **WHY IT MATTERS:** The toolchain utilizes `uv run uvicorn app.main:app` and `uv run pytest`. By default, Linux shell environments do not automatically parse `.env` files into active process variables. If the application does not declare an environment loader library (such as `python-dotenv` or `pydantic-settings`), `os.environ.get("OPENROUTER_API_KEY")` will return `None`, breaking the LLM connection both locally and in tests.
+   - **DISPOSITION SUGGESTION:** Amend the toolchain dependencies in the plan to include `python-dotenv` and add `dotenv.load_dotenv()` calls inside [app/main.py](file:///home/brent-gibson/projects/taxathon/app/main.py) and test setup entrypoints.
+
+7. **Question Budget Enforcement Challenges with Streaming**
+   - **CITATION:** From [FEATURES.md](file:///home/brent-gibson/projects/taxathon/FEATURES.md#L88-L89): `- The <=5-question budget is a server-side turn contract: a 6th user-facing question is refused, and only the ask_user tool's output may contain a question.`
+   - **ANCHOR:** firm
+   - **WHY IT MATTERS:** Since the final natural-language response turn is streamed directly token-by-token to the client, the server cannot parse and block questions written directly in the LLM's chat stream without either buffering the stream (defeating performance targets) or terminating the connection mid-stream.
+   - **DISPOSITION SUGGESTION:** Amend the guardrail contract. Clarify that the server-side turn contract enforces that the `ask_user` tool execution count does not exceed 5, and the final response is prompt-guided not to contain questions.
+
+8. **Use of Private `pypdf` Attribute `_root_object` in Reference Snippets**
+   - **CITATION:** From [research/irs-1040-pdf-fill.md](file:///home/brent-gibson/projects/taxathon/research/irs-1040-pdf-fill.md#L156): `acro = writer._root_object["/AcroForm"]`
+   - **ANCHOR:** firm
+   - **WHY IT MATTERS:** The code references the internal attribute `_root_object` (with a leading underscore). This makes the implementation fragile and prone to breakage upon library updates, whereas `pypdf` exposes `root_object` as a public attribute in recent versions.
+   - **DISPOSITION SUGGESTION:** Amend reference scripts to use `writer.root_object["/AcroForm"]` instead of `writer._root_object["/AcroForm"]`.
+
+---
+
+### NOTES
+
+- **W-2 Parser Limitation to AcroForm PDFs:** The current parser plan relies on reading AcroForm PDF fields. This means the system will fail on standard flat/text-based W-2 PDFs. Since this is an acceptable hackathon constraint, the UI and README should clearly document that only the authored PDF fixture is supported.
+- **Line-Buffering for NDJSON Streaming:** Because `fetch()` streams chunk raw data randomly across packet boundaries, a naive parser in `static/app.js` will throw JSON parsing exceptions. The UI stream reader must buffer incoming bytes and split by newlines before parsing.
+- **Tax Math Limitations:** The deterministic tax calculator ignores special standard deduction adjustments (e.g. dependents, age 65+, blindness) and digital assets. These assumptions should be explicitly declared in the UI or documentation so the calculation correctness claim is bounded.
+
+---
+
+## Questions
+
+1. Should we expand the W-2 file upload scope to include text-extraction fallback for standard W-2 text PDFs, or restrict it strictly to the authored AcroForm PDF fixture for the hackathon?
+2. How strictly should the system enforce matching between the LLM's chat text numbers and the computed numbers in `state.computed`?
+3. Should we add `python-dotenv` explicitly to the dependency list and code initialization to ensure `.env` loads correctly in all environments?
+
+Observable agent completed.
+Status: done
+Output: /home/brent-gibson/projects/taxathon/work/agents/verifier-g65g/prebuild-feasibility/output.md
+Events: /home/brent-gibson/projects/taxathon/work/agents/verifier-g65g/events.jsonl
+
+Pane kept open. Type exit to close it.

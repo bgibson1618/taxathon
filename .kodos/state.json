@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "phase": "build",
+  "run": {
+    "started": "2026-06-24T20:19:44.058Z",
+    "tokens_spent": 0,
+    "wall_clock_seconds": 0,
+    "current_features": []
+  },
+  "features": {
+    "F1": {
+      "status": "todo",
+      "attempts": 0,
+      "evidence": [],
+      "needs_you": null
+    },
+    "F2": {
+      "status": "todo",
+      "attempts": 0,
+      "evidence": [],
+      "needs_you": null
+    },
+    "F3": {
+      "status": "todo",
+      "attempts": 0,
+      "evidence": [],
+      "needs_you": null
+    },
+    "F4": {
+      "status": "todo",
+      "attempts": 0,
+      "evidence": [],
+      "needs_you": null
+    },
+    "F5": {
+      "status": "todo",
+      "attempts": 0,
+      "evidence": [],
+      "needs_you": null
+    },
+    "F6": {
+      "status": "todo",
+      "attempts": 0,
+      "evidence": [],
+      "needs_you": null
+    },
+    "F7": {
+      "status": "todo",
+      "attempts": 0,
+      "evidence": [],
+      "needs_you": null
+    },
+    "F8": {
+      "status": "todo",
+      "attempts": 0,
+      "evidence": [],
+      "needs_you": null
+    },
+    "F9": {
+      "status": "todo",
+      "attempts": 0,
+      "evidence": [],
+      "needs_you": null
+    },
+    "F10": {
+      "status": "todo",
+      "attempts": 0,
+      "evidence": [],
+      "needs_you": null
+    },
+    "F11": {
+      "status": "todo",
+      "attempts": 0,
+      "evidence": [],
+      "needs_you": null
+    },
+    "F12": {
+      "status": "todo",
+      "attempts": 0,
+      "evidence": [],
+      "needs_you": null
+    }
+  }
+}

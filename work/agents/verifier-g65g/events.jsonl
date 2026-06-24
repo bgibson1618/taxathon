@@ -1,0 +1,6 @@
+{"ts":"2026-06-24T20:02:48Z","event":"created","role":"prebuild-feasibility","backend":"antigravity","message":"observable role run created"}
+{"ts":"2026-06-24T20:02:49Z","event":"launched","role":"prebuild-feasibility","backend":"antigravity","message":"tmux pane %1104"}
+{"ts":"2026-06-24T20:02:49Z","event":"started","role":"verifier","backend":"antigravity","message":"backend command starting"}
+{"ts":"2026-06-24T20:04:12Z","event":"finished","role":"verifier","backend":"antigravity","message":"backend command completed"}
+{"ts":"2026-06-24T20:06:14Z","event":"stopped","role":"prebuild-feasibility","backend":"agent-roster","message":"stop requested"}
+{"ts":"2026-06-24T20:06:14Z","event":"stopped","role":"team","backend":"agent-roster","message":"run stop requested"}
